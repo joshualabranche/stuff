@@ -5,7 +5,7 @@
 # Make sure no files are open, processes are running, etc prior to unmounting
 
 # Mounting the Drive:
-# $ sudo crytpsetup luksopen $DEVICEPATH $PARTNAME
+# $ sudo crytpsetup luksOpen $DEVICEPATH $PARTNAME
 # $ sudo mount /dev/mapper/$PARTNAME /mnt/$PARTNAME
 
 # Unmounting the Drive:
@@ -20,7 +20,8 @@ apt-get install cryptsetup
 fdisk -l
 
 # prompt user for path of the device
-read -p '\nEnter the drive path you wish to encrypt: ' DRIVEPATH
+echo -e "\n"
+read -p 'Enter the drive path you wish to encrypt: ' DRIVEPATH
 
 # setup the LUKS encryption
 echo "Encrypting device at $DRIVEPATH"
@@ -29,6 +30,8 @@ while true; do
 	case $yesno in
 		[Yy]* )
 			echo "..."
+			break
+			
 		;;
 		[Nn]* )
 			echo "Exiting!"
@@ -40,21 +43,25 @@ done
 cryptsetup luksFormat --type luks2 --verify-passphrase $DRIVEPATH
 
 # prompt user for drive partition name
-read -p '\nEnter the partition name for the device: ' PARTNAME
+echo -e "\n"
+read -p 'Enter the partition name for the device: ' PARTNAME
 
 # create new partition
 cryptsetup luksOpen $DRIVEPATH $PARTNAME
 
 # check the status of the new partition
-cryptsetup -v status backup
+cryptsetup -v status $PARTNAME
 
 # create a file system on the new partitions
 mkfs -t ext4 -V /dev/mapper/$PARTNAME
 
-# mounting the device to be used
-mount /dev/mapper/PARTNAME /mnt/$PARTNAME
+# make mount dir
+mkdir /mnt/$PARTNAME
 
-echo '\nDevice mounted for file transfer\n'
+# mounting the device to be used
+mount /dev/mapper/$PARTNAME /mnt/$PARTNAME
+
+echo -e '\nDevice mounted for file transfer\n'
 
 while true; do
 	read -p "Unmount Device? (Y -> unmount, N -> exit script) [Y/n] " yesno
@@ -63,6 +70,7 @@ while true; do
                         echo "Unmounting Device"
 			umount /mnt/$PARTNAME
 			cryptsetup luksClose $PARTNAME
+			exit
 
                 ;;
                 [Nn]* )
